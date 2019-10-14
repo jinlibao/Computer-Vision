@@ -23,3 +23,24 @@ High grades are given for keen observations, creative algorithm improvements, cl
 ![Prexy](data/prexy5.jpg)
 ![Prexy](data/prexy6.jpg)
 ![Prexy](data/prexy7.jpg)
+
+## Result
+
+* Image 1 vs. Image 2
+  ![Prexy](output/prexy1_2.jpg)
+  ![Prexy](output/prexy2_1.jpg)
+* Image 2 vs. Image 3
+  ![Prexy](output/prexy2_2.jpg)
+  ![Prexy](output/prexy3_1.jpg)
+* Image 3 vs. Image 4
+  ![Prexy](output/prexy3_2.jpg)
+  ![Prexy](output/prexy4_1.jpg)
+* Image 4 vs. Image 5
+  ![Prexy](output/prexy4_2.jpg)
+  ![Prexy](output/prexy5_1.jpg)
+* Image 5 vs. Image 6
+  ![Prexy](output/prexy5_2.jpg)
+  ![Prexy](output/prexy6_1.jpg)
+* Image 6 vs. Image 7
+  ![Prexy](output/prexy6_2.jpg)
+  ![Prexy](output/prexy7_1.jpg)

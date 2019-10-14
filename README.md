@@ -18,10 +18,10 @@ High grades are given for keen observations, creative algorithm improvements, cl
 
 ### Images
 
-![Prexy](1.Camera-Calibration-Using-Pure-Rotation/data/prexy1.jpg)
-![Prexy](1.Camera-Calibration-Using-Pure-Rotation/data/prexy2.jpg)
-![Prexy](1.Camera-Calibration-Using-Pure-Rotation/data/prexy3.jpg)
-![Prexy](1.Camera-Calibration-Using-Pure-Rotation/data/prexy4.jpg)
-![Prexy](1.Camera-Calibration-Using-Pure-Rotation/data/prexy5.jpg)
-![Prexy](1.Camera-Calibration-Using-Pure-Rotation/data/prexy6.jpg)
-![Prexy](1.Camera-Calibration-Using-Pure-Rotation/data/prexy7.jpg)
+![Prexy](1-Camera-Calibration-Using-Pure-Rotation/data/prexy1.jpg)
+![Prexy](1-Camera-Calibration-Using-Pure-Rotation/data/prexy2.jpg)
+![Prexy](1-Camera-Calibration-Using-Pure-Rotation/data/prexy3.jpg)
+![Prexy](1-Camera-Calibration-Using-Pure-Rotation/data/prexy4.jpg)
+![Prexy](1-Camera-Calibration-Using-Pure-Rotation/data/prexy5.jpg)
+![Prexy](1-Camera-Calibration-Using-Pure-Rotation/data/prexy6.jpg)
+![Prexy](1-Camera-Calibration-Using-Pure-Rotation/data/prexy7.jpg)

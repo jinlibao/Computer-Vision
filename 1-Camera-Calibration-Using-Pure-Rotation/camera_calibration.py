@@ -43,10 +43,11 @@ class CameraCalibration():
         K = np.loadtxt('{:s}/K.csv'.format(output_dir), delimiter=',')
         return (R_list, K)
 
-    def print(self, A, filename=''):
+    def print(self, A, name='A', filename=''):
         nrow, ncol = A.shape
         if len(filename) == 0:
             print(r'\begin{equation*}')
+            print('{:s} = \n'.format(name))
             print(r'\begin{bmatrix}')
             for i in range(nrow):
                 print(r'{:8.4f} & {:8.4f} & {:8.4f} \\'.format(
@@ -57,12 +58,20 @@ class CameraCalibration():
 
         with open(filename, 'w') as f:
             f.write('\\begin{equation*}\n')
+            f.write('{:s} = \n'.format(name))
             f.write('\\begin{bmatrix}\n')
             for i in range(nrow):
                 f.write('{:8.4f} & {:8.4f} & {:8.4f} \\\\\n'.format(
                     A[i, 0], A[i, 1], A[i, 2]))
             f.write('\\end{bmatrix}.\n')
             f.write('\\end{equation*}\n')
+
+    def print_matrix(self, output_dir):
+        R_list, K = self.read_csv(output_dir)
+        for i in range(len(R_list)):
+            self.print(R_list[i], '\\widetilde{{R}}_{{{:d}}}'.format(i + 1),
+                       '{:s}/R_{:d}.tex'.format(output_dir, i + 1))
+        self.print(K, 'K', '{:s}/K.tex'.format(output_dir))
 
     def show_image(self, I, x, xr, filename):
         with PdfPages(filename) as pdf:
@@ -223,12 +232,6 @@ class CameraCalibration():
         x_reproj = K.dot(R.dot(K_inv.dot(x)))
         return x_reproj
 
-    def print_matrix(self, output_dir):
-        R_list, K = self.read_csv(output_dir)
-        for i in range(len(R_list)):
-            self.print(R_list[i], '{:s}/R_{:d}.tex'.format(output_dir, i + 1))
-        self.print(K, '{:s}/K.tex'.format(output_dir))
-
     def solve(self, mat_file, images, output_dir, tol=1, max_iter=200):
         I = [img.imread(image) for image in images]
         x1pMat, x2pMat = self.read_data(mat_file)
@@ -252,6 +255,7 @@ class CameraCalibration():
             print(R_list[i])
         print('Calibration matrix:')
         print(K)
+        self.print_matrix(output_dir)
 
         for i in range(len(I) - 1):
             I1, I2 = I[i].copy(), I[i + 1].copy()
@@ -287,6 +291,7 @@ class CameraCalibration():
             print(R_list[i])
         print('Calibration matrix:')
         print(K)
+        self.print_matrix(output_dir)
 
         for i in range(len(I) - 1):
             I1, I2 = I[i].copy(), I[i + 1].copy()
@@ -322,7 +327,6 @@ if __name__ == '__main__':
     images = ['./data/prexy{:d}.jpg'.format(i + 1) for i in range(7)]
     c.solve(mat_file, images, output_dir, 1, 200)
     # c.solve_cv2(mat_file, images, output_dir, 1, 200)
-    # c.print_matrix(output_dir)
 '''
 End of file
 '''

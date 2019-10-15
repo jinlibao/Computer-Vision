@@ -37,11 +37,32 @@ class CameraCalibration():
     def read_csv(self, output_dir):
         R_list = []
         for i in range(6):
-            R = np.loadtxt('{:s}/R_{:d}.csv'.format(output_dir, i),
+            R = np.loadtxt('{:s}/R_{:d}.csv'.format(output_dir, i + 1),
                            delimiter=',')
             R_list.append(R)
         K = np.loadtxt('{:s}/K.csv'.format(output_dir), delimiter=',')
         return (R_list, K)
+
+    def print(self, A, filename=''):
+        nrow, ncol = A.shape
+        if len(filename) == 0:
+            print(r'\begin{equation*}')
+            print(r'\begin{bmatrix}')
+            for i in range(nrow):
+                print(r'{:8.4f} & {:8.4f} & {:8.4f} \\'.format(
+                    A[i, 0], A[i, 1], A[i, 2]))
+            print(r'\end{bmatrix}')
+            print(r'\end{equation*}')
+            return
+
+        with open(filename, 'w') as f:
+            f.write('\\begin{equation*}\n')
+            f.write('\\begin{bmatrix}\n')
+            for i in range(nrow):
+                f.write('{:8.4f} & {:8.4f} & {:8.4f} \\\\\n'.format(
+                    A[i, 0], A[i, 1], A[i, 2]))
+            f.write('\\end{bmatrix}.\n')
+            f.write('\\end{equation*}\n')
 
     def show_image(self, I, x, xr, filename):
         with PdfPages(filename) as pdf:
@@ -65,9 +86,10 @@ class CameraCalibration():
                            label='reprojection')
             plt.legend(handles=[h1, h2], loc='lower right')
             plt.grid()
+            plt.axis([-0.5, 1279.5, 959.5, -0.5])
             plt.axis('off')
             plt.show(block=False)
-            plt.axis([-0.5, 1279.5, 959.5, -0.5])
+            plt.savefig(filename.replace('pdf', 'png'), format='png', dpi=300)
             pdf.savefig(fig)
             plt.close()
 
@@ -184,12 +206,12 @@ class CameraCalibration():
         k = y['x']
         for i in range(len(R_list)):
             R = R_list[i]
-            np.savetxt('{:s}/R_{:d}.csv'.format(output_dir, i),
+            np.savetxt('{:s}/R_{:d}.csv'.format(output_dir, i + 1),
                        R,
                        delimiter=',',
                        fmt='%15.8f',
                        newline='\n')
-        np.savetxt('{:s}/K.csv'.format(output_dir, i),
+        np.savetxt('{:s}/K.csv'.format(output_dir, i + 1),
                    self.K(k),
                    delimiter=',',
                    fmt='%15.8f',
@@ -201,7 +223,13 @@ class CameraCalibration():
         x_reproj = K.dot(R.dot(K_inv.dot(x)))
         return x_reproj
 
-    def solve(self, mat_file, images, output_dir, tol=16, max_iter=100):
+    def print_matrix(self, output_dir):
+        R_list, K = self.read_csv(output_dir)
+        for i in range(len(R_list)):
+            self.print(R_list[i], '{:s}/R_{:d}.tex'.format(output_dir, i + 1))
+        self.print(K, '{:s}/K.tex'.format(output_dir))
+
+    def solve(self, mat_file, images, output_dir, tol=1, max_iter=200):
         I = [img.imread(image) for image in images]
         x1pMat, x2pMat = self.read_data(mat_file)
         ncols = []
@@ -292,8 +320,9 @@ if __name__ == '__main__':
     mat_file = './data/pureRotPrexyCorrespondencePoints.mat'
     output_dir = './output'
     images = ['./data/prexy{:d}.jpg'.format(i + 1) for i in range(7)]
-    # c.solve(mat_file, images, output_dir, 1, 200)
-    c.solve_cv2(mat_file, images, output_dir)
+    c.solve(mat_file, images, output_dir, 1, 200)
+    # c.solve_cv2(mat_file, images, output_dir, 1, 200)
+    # c.print_matrix(output_dir)
 '''
 End of file
 '''

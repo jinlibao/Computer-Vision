@@ -184,3 +184,6 @@ dmypy.json
 tags
 
 # End of https://www.gitignore.io/api/macos,linux,python,matlab
+
+# Jupyter Notebook Checkpoint
+.ipynb_checkpoints/

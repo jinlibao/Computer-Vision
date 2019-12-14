@@ -8,3 +8,6 @@ First, design a CNN which does the best job overall of classifying the validatio
 
 Once you’ve found your best CNN, try find a reduced version of it that requires less computations and/or memory to implementations, clear documentation, etc. Show me that you understand how to design a CNN. A formal written report documenting the above is expected and will be graded for grammar and clearness of exposition.
 
+## Data
+
+* [Animals Image Dataset (Dogs, Cats, and Panda) on Kaggle](https://www.kaggle.com/ashishsaxena2209/animal-image-datasetdog-cat-and-panda)

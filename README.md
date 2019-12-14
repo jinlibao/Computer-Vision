@@ -1,7 +1,7 @@
 # Computer-Vision
 EE 5885 Geometry and Deep Computer Vision Projects (Fall 2019)
 
-## Project 1: Camera Calibration Using Pure Rotation
+## [Project 1: Camera Calibration Using Pure Rotation](1-Camera-Calibration-Using-Pure-Rotation)
 
 ### Description
 This project is to calibrate a camera by using  a sequence of images that are taken as the camera rotates without translating. A number of files to help with this task are provided in WyoCourses under the directory `project1`. First, it contains seven photos taken in Prexy's pasture as I rotated the  camera. Second, it contains correspondence points for each adjoining set of images that  are contained MATLAB using `load pureRotPrexyCorrespondencePoints`. It contains two data structures, `x1pMat` and `x2pMat`. These $3 \times 100 \times 6$ data structures contain the correspondence points between images $I$ and $I + 1$. For instance, `x1pMat(:,:,1)` contains image $1$ pixel correspondence points between images $1$ and images $2$, `x2pMat(:,:,1)` contains image 2 pixel correspondence points between photos 1 and 2, `x2pMat(:,:,6)` contains image 2 pixel correspondence points between image 6 and image 7, etc. Note: These correspondence points were automatically generated using the SIFT operator, which we will soon cover. MATLAB code for SIFT is available through VLFEAT. VLFEAT is not needed for this project, but is very useful. Your task is to implement and test   the calibration algorithm that uses images obtained under pure rotation. The program `Proj1PureRotCalib5DsearchTemplate.m` is provided to help you load and plot the images, etc., so be sure to first load all the `project1` files into a single directory for you to work on., run this template, and look at its comments. It has several hints. A similar Python file, `proj1template.py` is also provided if you prefer to use Python. To do the optimization, you may find `fminsearch.m` useful in MATLAB, or `scipy.optimize.minimize` useful in Python.
@@ -26,7 +26,7 @@ High grades are given for keen observations, creative algorithm improvements, cl
 ![Prexy](1-Camera-Calibration-Using-Pure-Rotation/data/prexy6.jpg)
 ![Prexy](1-Camera-Calibration-Using-Pure-Rotation/data/prexy7.jpg)
 
-## Project 2: Classifier for Animals Dataset
+## [Project 2: Classifier for Animals Image Dataset](2-Classifier-for-Animals-Image-Dataset)
 
 ### Description
 

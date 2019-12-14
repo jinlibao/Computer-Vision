@@ -1,4 +1,4 @@
-# Project 2: Classifier for Animals Dataset
+# Project 2: Classifier for Animals Image Dataset
 
 ## Description
 

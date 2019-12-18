@@ -39,11 +39,13 @@ GRES[1]=$TETON_GPU_GRES
 if [[ $OSTYPE == darwin* ]]     # MacBook Pro @ libaooutrage (macOS)
 then
     PROJECT_DIR=/Users/libao/Documents/work/projects/Computer-Vision/2-Classifier-for-Animals-Image-Dataset
-    DATA_DIR=/Users/libao/Documents/data/animals
+    export DATA_DIR=/Users/libao/Documents/data/cnn/animals
+    export MODEL_DIR=/Users/libao/Documents/data/cnn/trained_model
 elif [[ $OSTYPE == linux-gnu ]] # Teton @ UWyo ARCC (Linux)
 then
     PROJECT_DIR=/home/ljin1/repos/Computer-Vision/2-Classifier-for-Animals-Image-Dataset
-    DATA_DIR=/gscratch/ljin1/data/animals
+    export DATA_DIR=/gscratch/ljin1/data/cnn/animals
+    export MODEL_DIR=/gscratch/ljin1/data/cnn/trained_model
 fi
 
 # Set up output directory
@@ -53,7 +55,6 @@ fi
 
 k=1
 
-export MODEL_DIR=$PROJECT_DIR/trained_model
 export BATCH_SIZE=32
 export TEST_SIZE=0.25
 export VALIDATION_SIZE=0.2
@@ -69,6 +70,6 @@ for (( i=0; i<1; ++i ))
 do
     export NET_NAME=${NET_NAMES[j]}
     export NCPU=`echo ${NODES[k]} \* ${NTASKS_PER_NODE[k]}|bc`
-    # sbatch --partition=${PARTITION[k]} --nodes=${NODES[k]} --ntasks-per-node=${NTASKS_PER_NODE[k]} --mem=${MEM[k]} --gres=${GRES[k]} task.sh
-    bash task.sh
+    sbatch --partition=${PARTITION[k]} --nodes=${NODES[k]} --ntasks-per-node=${NTASKS_PER_NODE[k]} --mem=${MEM[k]} --gres=${GRES[k]} task.sh
+    # bash task.sh
 done

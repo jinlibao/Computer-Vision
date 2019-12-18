@@ -261,12 +261,12 @@ class CNNTrainer(object):
         return (train_loader, validation_loader, test_loader, classes)
 
     def get_report(self, net, data_loader):
-        net.to(self.device)
+        net = net.to(self.device)
         with torch.no_grad():
             predicts_total, targets_total = [], []
             for batch in data_loader:
                 images, targets = batch
-                images.to(self.device)
+                images = images.to(self.device)
                 outputs = net(images)
                 _, predicts = torch.max(outputs, 1)
                 predicts_total.extend(predicts.numpy())
@@ -277,19 +277,22 @@ class CNNTrainer(object):
         return (report_dict, report, confusion)
 
     def model(self, net, data_loader, criterion=None, optimizer=None, mode='eval'):
-        net.to(self.device)
+        net = net.to(self.device)
         running_loss = 0.0
         for batch in data_loader:
             images, targets = batch
-            images.to(self.device)
+            images = images.to(self.device)
+            targets = targets.to(self.device)
             if mode == 'train':
                 optimizer.zero_grad()
                 outputs = net(images)
+                outputs = outputs.to(self.device)
                 loss = criterion(outputs, targets)
                 loss.backward()
                 optimizer.step()
             else:
                 outputs = net(images)
+                outputs = outputs.to(self.device)
                 loss = criterion(outputs, targets)
             running_loss += loss.item() / len(data_loader)
         report_dict, _, _ = self.get_report(net, data_loader)

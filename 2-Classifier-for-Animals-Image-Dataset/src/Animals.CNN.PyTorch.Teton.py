@@ -129,7 +129,7 @@ class AnimalsDataset(Dataset):
 class CNNTrainer(object):
 
     def __init__(self, data_dir, model_dir, batch_size, test_size,
-                 validation_size, learning_rates, momentums, epochs,
+                 validation_size, learning_rate, momentum, epochs,
                  net_name, lr_step, lr_step_size, lr_gamma):
         # Visualization
         ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -158,8 +158,8 @@ class CNNTrainer(object):
         self.classes = classes
 
         # Tuning hyperparamters
-        self.learning_rates = learning_rates
-        self.momentums = momentums
+        self.learning_rate = learning_rate
+        self.momentum = momentum
         self.epochs = epochs
         self.lr_step = lr_step
         self.lr_step_size = lr_step_size
@@ -191,29 +191,29 @@ class CNNTrainer(object):
 
         plt.show()
 
-    def plot(self, df, net_name, learning_rates, momentums, plot_dir='.'):
+    def plot(self, df, net_name, learning_rate, momentum, plot_dir='.'):
         linestyle = self.linestyle
-        for lr in learning_rates:
-            for m in momentums:
-                d = df[(df['lr'] == lr) & (df['momentum'] == m)]
-                fig = plt.figure(figsize=(8, 6))
-                plt.plot(d['epoch'], d['acc_train'], linestyle[0], label='acc_train')
-                plt.plot(d['epoch'], d['acc_val'], linestyle[1], label='acc_val')
-                plt.plot(d['epoch'], d['loss_train'], linestyle[2], label='loss_train')
-                plt.plot(d['epoch'], d['loss_val'], linestyle[3], label='loss_val')
-                plt.xlabel('epoch #', color='black')
-                plt.ylabel('loss/accuracy', color='black')
-                plt.title('{:s} (lr = ${:.2f}$, momentum = ${:.2f}$)'.format(
-                    net_name, lr, m))
-                plt.legend(loc='best')
-                [i.set_color('black') for i in plt.gca().get_xticklabels()]
-                [i.set_color('black') for i in plt.gca().get_yticklabels()]
-                plt.show(block=False)
-                filename = '{:s}/{:s}_{:.2f}_{:.2f}.pdf'.format(
-                    plot_dir, net_name, lr, m
-                )
-                print('Saving plot to {:s}'.format(filename))
-                plt.savefig(filename, bbox_inches='tight')
+        lr = learning_rate
+        m = momentum
+        d = df[(df['lr'] == lr) & (df['momentum'] == m)]
+        plt.figure(figsize=(8, 6))
+        plt.plot(d['epoch'], d['acc_train'], linestyle[0], label='acc_train')
+        plt.plot(d['epoch'], d['acc_val'], linestyle[1], label='acc_val')
+        plt.plot(d['epoch'], d['loss_train'], linestyle[2], label='loss_train')
+        plt.plot(d['epoch'], d['loss_val'], linestyle[3], label='loss_val')
+        plt.xlabel('epoch #', color='black')
+        plt.ylabel('loss/accuracy', color='black')
+        plt.title('{:s} (lr = ${:.2f}$, momentum = ${:.2f}$)'.format(
+            net_name, lr, m))
+        plt.legend(loc='best')
+        [i.set_color('black') for i in plt.gca().get_xticklabels()]
+        [i.set_color('black') for i in plt.gca().get_yticklabels()]
+        plt.show(block=False)
+        filename = '{:s}/{:s}_{:.2f}_{:.2f}.pdf'.format(
+            plot_dir, net_name, lr, m
+        )
+        print('Saving plot to {:s}'.format(filename))
+        plt.savefig(filename, bbox_inches='tight')
 
     def read_image(self, data_dir, test_size=0.25, validation_size=0.2,
                    batch_size=32, transform=None):
@@ -351,8 +351,8 @@ class CNNTrainer(object):
         train_loader, validation_loader, test_loader, classes = self.dataset
         net = self.nets[self.net_name]
         epochs = self.epochs
-        learning_rates = self.learning_rates
-        momentums = self.momentums
+        learning_rate = self.learning_rate
+        momentum = self.momentum
         dataset = self.dataset
         model_dir = self.model_dir
         lr_step = self.lr_step
@@ -363,19 +363,16 @@ class CNNTrainer(object):
             print('Training {:s} on GPU...'.format(net.name))
         else:
             print('Training {:s}...'.format(net.name))
-        all_history = []
-        for lr in learning_rates:
-            for momentum in momentums:
-                dest='{:s}/{:s}'.format(model_dir, net.name)
-                print('learning rate: {:e}, momentumn: {:e}'.format(lr, momentum))
-                report_dict, report, confusion, history = self.CNN(net, dataset, epochs, lr, momentum, dest, lr_step, lr_step_size, lr_gamma)
-                pd.DataFrame(report_dict).T.to_csv('{:s}/{:s}_{:.2f}_{:.2f}_{:d}_report.csv'.format(dest, net.name, lr, momentum, epochs))
-                all_history.extend(history)
-                print('Confusion matrix:\n', confusion)
-                print('Classification report:\n', report)
-        df = pd.DataFrame(all_history)
-        df.to_csv('{:s}/training_history.csv'.format(dest))
-        self.plot(df, net.name, learning_rates, momentums, dest)
+        lr = learning_rate
+        dest='{:s}/{:s}'.format(model_dir, net.name)
+        print('learning rate: {:e}, momentumn: {:e}'.format(lr, momentum))
+        report_dict, report, confusion, history = self.CNN(net, dataset, epochs, lr, momentum, dest, lr_step, lr_step_size, lr_gamma)
+        pd.DataFrame(report_dict).T.to_csv('{:s}/{:s}_{:.2f}_{:.2f}_{:d}_report.csv'.format(dest, net.name, lr, momentum, epochs))
+        print('Confusion matrix:\n', confusion)
+        print('Classification report:\n', report)
+        df = pd.DataFrame(history)
+        df.to_csv('{:s}/{:s}_training_history_{:.2f}_{:.2f}.csv'.format(dest, net.name, lr, momentum))
+        self.plot(df, net.name, learning_rate, momentum, dest)
 
 
 if __name__ == '__main__':
@@ -387,6 +384,8 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--validation_size', dest='validation_size', help='Validation set size')
     parser.add_argument('-e', '--epochs', dest='epochs', help='Number of epochs to train the network')
     parser.add_argument('-n', '--net_name', dest='net_name', help='Choose CNN to train')
+    parser.add_argument('-r', '--learning_rate', dest='learning_rate', help='Learning rate')
+    parser.add_argument('-u', '--momentum', dest='momentum', help='Momentum')
     parser.add_argument('-l', '--lr_step', dest='lr_step', help='True/False: Enable/Disable learning_rates scheduler')
     parser.add_argument('-s', '--lr_step_size', dest='lr_step_size', help='Decay learning_rate every lr_step_size')
     parser.add_argument('-g', '--lr_gamma', dest='lr_gamma', help='Decay learning_rate by lr_gamma')
@@ -398,16 +397,12 @@ if __name__ == '__main__':
     test_size = float(args.test_size) if args.test_size else 0.25
     validation_size = float(args.validation_size) if args.validation_size else 0.2
     epochs = int(args.epochs) if args.epochs else 30
+    learning_rate = float(args.learning_rate) if args.learning_rate else 1e-2
+    momentum = float(args.momentum) if args.momentum else 0.85
     lr_step = True if args.lr_step and args.lr_step == 'True' else False
     lr_step_size = int(args.lr_step_size) if args.lr_step_size else 10
     lr_gamma = float(args.lr_gamma) if args.lr_gamma else 0.1
     net_name = args.net_name if args.net_name else 'ShallowNet'
-
-    # epochs = 5
-    learning_rates = [1e-1, 1e-2]
-    momentums = [0.85]
-    # learning_rates = [1e-1, 1e-2,1e-3, 1e-4]
-    # momentums = torch.arange(0.8, 1.00, 0.05)
 
     print('data_dir:', data_dir)
     print('model_dir:', model_dir)
@@ -418,11 +413,11 @@ if __name__ == '__main__':
     print('lr_step:', lr_step)
     print('lr_step_size:', lr_step_size)
     print('lr_gamma:', lr_gamma)
-    print('learning_rates:', learning_rates)
-    print('momentums:', momentums)
+    print('learning_rate:', learning_rate)
+    print('momentum:', momentum)
     print('net_name:', net_name)
 
     ct = CNNTrainer(data_dir, model_dir, batch_size, test_size,
-                    validation_size, learning_rates, momentums, epochs,
+                    validation_size, learning_rate, momentum, epochs,
                     net_name, lr_step, lr_step_size, lr_gamma)
     ct.test()

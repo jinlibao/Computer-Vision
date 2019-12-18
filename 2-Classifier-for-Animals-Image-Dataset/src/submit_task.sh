@@ -14,14 +14,14 @@ MORAN_GPU_PARTITION=moran-bigmem-gpu
 MORAN_GPU_MAX_NODES=2
 MORAN_GPU_NODES=1
 MORAN_GPU_NTASKS_PER_NODE=1
-MORAN_GPU_MEM=512000
+MORAN_GPU_MEM=32000
 MORAN_GPU_GRES=gpu:k80:1
 
 TETON_GPU_PARTITION=teton-gpu
 TETON_GPU_MAX_NODES=8
 TETON_GPU_NODES=1
 TETON_GPU_NTASKS_PER_NODE=1
-TETON_GPU_MEM=512000
+TETON_GPU_MEM=32000
 TETON_GPU_GRES=gpu:p100:1
 
 PARTITION[0]=$MORAN_GPU_PARTITION
@@ -55,21 +55,37 @@ fi
 
 k=1
 
-export BATCH_SIZE=32
+export BATCH_SIZE=128
 export TEST_SIZE=0.25
 export VALIDATION_SIZE=0.2
-export EPOCHS=120
+export EPOCHS=200
 export LR_STEP=False
 export LR_STEP_SIZE=10
 export LR_GAMMA=0.5
 NET_NAMES[0]=LeNet
 NET_NAMES[1]=ShallowNet
 NET_NAMES[2]=MiniVGGNet
+LEARNING_RATES[0]=1e-1
+LEARNING_RATES[1]=1e-2
+LEARNING_RATES[2]=1e-3
+LEARNING_RATES[3]=1e-4
+MOMENTUMS[0]=0.8
+MOMENTUMS[1]=0.85
+MOMENTUMS[2]=0.9
+MOMENTUMS[3]=0.95
 
-for (( i=0; i<1; ++i ))
+for (( i=0; i<3; ++i ))
 do
-    export NET_NAME=${NET_NAMES[j]}
-    export NCPU=`echo ${NODES[k]} \* ${NTASKS_PER_NODE[k]}|bc`
-    sbatch --partition=${PARTITION[k]} --nodes=${NODES[k]} --ntasks-per-node=${NTASKS_PER_NODE[k]} --mem=${MEM[k]} --gres=${GRES[k]} task.sh
-    # bash task.sh
+    export NET_NAME=${NET_NAMES[i]}
+    for (( l=0; l<4; ++l ))
+    do
+        export LEARNING_RATE=${LEARNING_RATES[l]}$
+        for (( m=0; m<4; ++m ))
+        do
+            export MOMENTUM=${MOMENTUMS[m]}$
+            export NCPU=`echo ${NODES[k]} \* ${NTASKS_PER_NODE[k]}|bc`
+            sbatch --partition=${PARTITION[k]} --nodes=${NODES[k]} --ntasks-per-node=${NTASKS_PER_NODE[k]} --mem=${MEM[k]} --gres=${GRES[k]} task.sh
+            # bash task.sh
+        done
+    done
 done

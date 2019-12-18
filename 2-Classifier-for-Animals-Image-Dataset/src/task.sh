@@ -32,6 +32,8 @@ if [ ! -d $DATA_DIR ]; then
 fi
 
 if [ -z $BATCH_SIZE ]; then
+    LEARNING_RATE=1e-1
+    MOMENTUM=0.8
     BATCH_SIZE=64
     TEST_SIZE=0.25
     VALIDATION_SIZE=0.2
@@ -45,5 +47,5 @@ fi
 # Run
 cd $PROJECT_DIR/src
 
-./Animals.CNN.PyTorch.py -d $DATA_DIR -m $MODEL_DIR -b $BATCH_SIZE -t $TEST_SIZE -v $VALIDATION_SIZE -e $EPOCHS -n $NET_NAME -l $LR_STEP -s $LR_STEP_SIZE -g $LR_GAMMA
-# srun ./Animals.CNN.PyTorch.py -d $DATA_DIR -m $MODEL_DIR -b $BATCH_SIZE -t $TEST_SIZE -v $VALIDATION_SIZE -e $EPOCHS -n $NET_NAME -l $LR_STEP -s $LR_STEP_SIZE -g $LR_GAMMA
+./Animals.CNN.PyTorch.Teton.py -d $DATA_DIR -m $MODEL_DIR -r $LEARNING_RATE -u $MOMENTUM -b $BATCH_SIZE -t $TEST_SIZE -v $VALIDATION_SIZE -e $EPOCHS -n $NET_NAME -l $LR_STEP -s $LR_STEP_SIZE -g $LR_GAMMA
+# srun ./Animals.CNN.PyTorch.Teton.py -d $DATA_DIR -m $MODEL_DIR -r $LEARNING_RATE -u $MOMENTUM -b $BATCH_SIZE -t $TEST_SIZE -v $VALIDATION_SIZE -e $EPOCHS -n $NET_NAME -l $LR_STEP -s $LR_STEP_SIZE -g $LR_GAMMA

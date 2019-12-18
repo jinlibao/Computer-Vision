@@ -269,7 +269,7 @@ class CNNTrainer(object):
                 images = images.to(self.device)
                 outputs = net(images)
                 _, predicts = torch.max(outputs, 1)
-                predicts_total.extend(predicts.numpy())
+                predicts_total.extend(predicts.cpu().numpy())
                 targets_total.extend(targets.numpy())
             confusion = confusion_matrix(targets_total, predicts_total)
             report_dict = classification_report(targets_total, predicts_total, target_names=self.classes, output_dict=True)

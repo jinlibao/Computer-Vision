@@ -64,19 +64,19 @@ GRES[3]=$DGX_GPU_GRES
 
 if [[ $OSTYPE == darwin* ]]     # MacBook Pro @ libaooutrage (macOS)
 then
-    PROJECT_DIR=/Users/libao/Documents/work/projects/Computer-Vision/2-Classifier-for-Animals-Image-Dataset
-    export DATA_DIR=/Users/libao/Documents/data/cnn/animals
-    export MODEL_DIR=/Users/libao/Documents/data/cnn/trained_model
+  PROJECT_DIR=/Users/libao/Documents/work/projects/Computer-Vision/2-Classifier-for-Animals-Image-Dataset
+  export DATA_DIR=/Users/libao/Documents/data/cnn/animals
+  export MODEL_DIR=/Users/libao/Documents/data/cnn/trained_model
 elif [[ $OSTYPE == linux-gnu ]] # Teton @ UWyo ARCC (Linux)
 then
-    PROJECT_DIR=/home/ljin1/repos/Computer-Vision/2-Classifier-for-Animals-Image-Dataset
-    export DATA_DIR=/gscratch/ljin1/data/cnn/animals
-    export MODEL_DIR=/gscratch/ljin1/data/cnn/trained_model
+  PROJECT_DIR=/home/ljin1/repos/Computer-Vision/2-Classifier-for-Animals-Image-Dataset
+  export DATA_DIR=/gscratch/ljin1/data/cnn/animals
+  export MODEL_DIR=/gscratch/ljin1/data/cnn/trained_model
 fi
 
 # Set up output directory
 if [ ! -d $DATA_DIR ]; then
-    mkdir -p $DATA_DIR
+  mkdir -p $DATA_DIR
 fi
 
 k=1
@@ -106,27 +106,45 @@ WEIGHT_DECAYS[0]=1e-1
 WEIGHT_DECAYS[1]=1e-2
 WEIGHT_DECAYS[2]=1e-3
 WEIGHT_DECAYS[3]=1e-4
+USE_DATA_AUGMENTATIONS[0]=True
+USE_DATA_AUGMENTATIONS[1]=False
+USE_BATCH_NORMS[0]=True
+USE_BATCH_NORMS[1]=False
+USE_DROPOUTS[0]=True
+USE_DROPOUTS[1]=False
 
 for (( i=2; i<3; ++i ))
 do
-    export NET_NAME=${NET_NAMES[i]}
-    for (( l=1; l<2; ++l ))
+  export NET_NAME=${NET_NAMES[i]}
+  for (( l=1; l<2; ++l ))
+  do
+    export LEARNING_RATE=${LEARNING_RATES[l]}
+    for (( m=1; m<3; ++m ))
     do
-        export LEARNING_RATE=${LEARNING_RATES[l]}
-        for (( m=1; m<2; ++m ))
+      export MOMENTUM=${MOMENTUMS[m]}
+      for (( g=1; g<1; ++g ))
+      do
+        export LR_GAMMA=${LR_GAMMAS[g]}
+        for (( w=0; w<1; ++w ))
         do
-            export MOMENTUM=${MOMENTUMS[m]}
-            for (( g=0; g<4; ++g ))
+          export WEIGHT_DECAY=${WEIGHT_DECAYS[w]}
+          for (( a=0; a<2; ++a ))
+          do
+            export USE_DATA_AUGMENTATION=${USE_DATA_AUGMENTATIONS[a]}
+            for (( o=0; o<2; ++o ))
             do
-                export LR_GAMMA=${LR_GAMMAS[g]}
-                for (( w=0; w<4; ++w ))
-                do
-                    export WEIGHT_DECAY=${WEIGHT_DECAYS[w]}
-                    export NCPU=`echo ${NODES[k]} \* ${NTASKS_PER_NODE[k]}|bc`
-                    sbatch --partition=${PARTITION[k]} --nodes=${NODES[k]} --ntasks-per-node=${NTASKS_PER_NODE[k]} --mem=${MEM[k]} --gres=${GRES[k]} task.sh
-                    # bash task.sh
-                done
+              export USE_DROPOUT=${USE_DROPOUTS[o]}
+              for (( c=0; c<2; +co ))
+              do
+                export USE_BATCH_NORM=${USE_BATCH_NORMS[c]}
+                export NCPU=`echo ${NODES[k]} \* ${NTASKS_PER_NODE[k]}|bc`
+                sbatch --partition=${PARTITION[k]} --nodes=${NODES[k]} --ntasks-per-node=${NTASKS_PER_NODE[k]} --mem=${MEM[k]} --gres=${GRES[k]} task.sh
+                # bash task.sh
+              done
             done
+          done
         done
+      done
     done
+  done
 done

@@ -20,25 +20,19 @@ from argparse import ArgumentParser
 import timeit
 
 
-class TorchNet(nn.Module):
+# Rosebrock
+class ShallowNet(nn.Module):
 
     def __init__(self):
-        super(TorchNet, self).__init__()
-        self.name = 'TorchNet'
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 64)
-        self.fc2 = nn.Linear(64, 16)
-        self.fc3 = nn.Linear(16, 3)
+        super(ShallowNet, self).__init__()
+        self.name = 'ShallowNet'
+        self.conv = nn.Conv2d(3, 32, 3, 1, 1)
+        self.fc = nn.Linear(32 * 32 * 32, 3)
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 16 * 5 * 5)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.softmax(self.fc3(x), dim=1)
+        x = F.relu(self.conv(x))
+        x = x.view(-1, 32 * 32 * 32)
+        x = F.softmax(self.fc(x), dim=1)
         return x
 
 
@@ -64,9 +58,11 @@ class LeNet(nn.Module):
 
 class MiniVGGNet(nn.Module):
 
-    def __init__(self):
+    def __init__(self, use_batch_norm=True, use_dropout=True):
         super(MiniVGGNet, self).__init__()
         self.name = 'MiniVGGNet'
+        self.use_batch_norm = use_batch_norm
+        self.use_dropout = use_dropout
         self.conv1 = nn.Conv2d(3, 32, 3, 1, 1)
         self.conv2 = nn.Conv2d(32, 32, 3, 1, 1)
         self.conv3 = nn.Conv2d(32, 64, 3, 1, 1)
@@ -81,31 +77,19 @@ class MiniVGGNet(nn.Module):
         self.fc2 = nn.Linear(512, 3)
 
     def forward(self, x):
-        x = self.batch_norm1(F.relu(self.conv1(x)))
-        x = self.dropout1(self.pool(self.batch_norm1(F.relu(self.conv2(x)))))
-        x = self.batch_norm2(F.relu(self.conv3(x)))
-        x = self.dropout1(self.pool(self.batch_norm2(F.relu(self.conv4(x)))))
+        x = F.relu(self.conv2(self.batch_norm1(F.relu(self.conv1(x)))))
+        x = self.batch_norm1(x) if self.use_batch_norm else x
+        x = self.dropout1(self.pool(x)) if self.use_dropout else self.pool(x)
+        x = F.relu(self.conv3(x))
+        x = self.batch_norm2(x) if self.use_batch_norm else x
+        x = F.relu(self.conv4(x))
+        x = self.batch_norm2(x) if self.use_batch_norm else x
+        x = self.dropout1(self.pool(x)) if self.use_dropout else self.pool(x)
         x = x.view(-1, 8 * 8 * 64)
         x = F.relu(self.fc1(x))
-        x = self.batch_norm3(x)
-        x = self.dropout2(x)
+        x = self.batch_norm3(x) if self.use_batch_norm else x
+        x = self.dropout2(x) if self.use_dropout else x
         x = F.softmax(self.fc2(x), dim=1)
-        return x
-
-
-# Rosebrock
-class ShallowNet(nn.Module):
-
-    def __init__(self):
-        super(ShallowNet, self).__init__()
-        self.name = 'ShallowNet'
-        self.conv = nn.Conv2d(3, 32, 3, 1, 1)
-        self.fc = nn.Linear(32 * 32 * 32, 3)
-
-    def forward(self, x):
-        x = F.relu(self.conv(x))
-        x = x.view(-1, 32 * 32 * 32)
-        x = F.softmax(self.fc(x), dim=1)
         return x
 
 
@@ -130,7 +114,8 @@ class CNNTrainer(object):
 
     def __init__(self, data_dir, model_dir, batch_size, test_size,
                  validation_size, learning_rate, momentum, epochs,
-                 net_name, lr_step, lr_step_size, lr_gamma, weight_decay):
+                 net_name, lr_step, lr_step_size, lr_gamma, weight_decay,
+                 use_data_augmentation, use_dropout, use_batch_norm):
         # Visualization
         ImageFile.LOAD_TRUNCATED_IMAGES = True
         plt.style.use('ggplot')
@@ -144,11 +129,21 @@ class CNNTrainer(object):
         self.batch_size = batch_size
         self.test_size = test_size
         self.validation_size = validation_size
-        self.transform = transforms.Compose([
-            transforms.Resize((32, 32)), # resize all the image to 32x32x3
-            transforms.ToTensor(),       # [0, 255] -> [0, 1.0], (H x W x C) -> (C x H x W)
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) # [0, 1.0] -> [-1.0, 1.0]
-        ])
+        self.use_data_augmentation = 1 if use_data_augmentation else 0
+        if use_data_augmentation:  # Data Augmentation
+            self.transform = transforms.Compose([
+                transforms.RandomCrop(32),
+                transforms.RandomVerticalFlip(),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            ])
+        else:
+            self.transform = transforms.Compose([
+                transforms.Resize((32, 32)),                            # resize all the image to 32x32x3
+                transforms.ToTensor(),                                  # [0, 255] -> [0, 1.0], (H x W x C) -> (C x H x W)
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # [0, 1.0] -> [-1.0, 1.0]
+            ])
         self.dataset = self.read_image(data_dir, test_size, validation_size,
                                        batch_size, self.transform)
         train_loader, validation_loader, test_loader, classes = self.dataset
@@ -162,6 +157,7 @@ class CNNTrainer(object):
         self.momentum = momentum
         self.epochs = epochs
         self.lr_step = lr_step
+        self.use_lr_step = 1 if lr_step else 0
         self.lr_step_size = lr_step_size
         self.lr_gamma = lr_gamma
         self.weight_decay = weight_decay
@@ -172,8 +168,10 @@ class CNNTrainer(object):
 
         # Select CNN
         self.net_name = net_name
+        self.use_dropout = 1 if use_dropout else 0
+        self.use_batch_norm = 1 if use_batch_norm else 0
         self.nets = {
-            'MiniVGGNet': MiniVGGNet(),
+            'MiniVGGNet': MiniVGGNet(use_batch_norm, use_dropout),
             'LeNet': LeNet(),
             'ShallowNet': ShallowNet(),
         }
@@ -192,8 +190,8 @@ class CNNTrainer(object):
 
         plt.show()
 
-    def plot_weight_decay_gamma(self, df, net_name, learning_rate, momentum,
-                                weight_decay, lr_gamma, plot_dir='.'):
+    def plot(self, df, net_name, learning_rate, momentum, weight_decay,
+             lr_gamma, plot_dir='.', suffix='', title=''):
         linestyle = self.linestyle
         d = df[(df['weight_decay'] == weight_decay) & (df['lr_gamma'] == lr_gamma)]
         plt.figure(figsize=(8, 6))
@@ -203,14 +201,14 @@ class CNNTrainer(object):
         plt.plot(d['epoch'], d['loss_val'], linestyle[3], label='loss_val')
         plt.xlabel('epoch #', color='black')
         plt.ylabel('loss/accuracy', color='black')
-        plt.title('{:s} (weight_decay = ${:.2e}$, lr_gamma = ${:.2e}$)'.format(
-            net_name, weight_decay, lr_gamma))
+        if len(title) > 0:
+            plt.title(title)
         plt.legend(loc='best')
         [i.set_color('black') for i in plt.gca().get_xticklabels()]
         [i.set_color('black') for i in plt.gca().get_yticklabels()]
         plt.show(block=False)
-        filename = '{:s}/{:s}_{:.2e}_{:.2e}_{:.2e}_{:.2e}.pdf'.format(
-            plot_dir, net_name, learning_rate, momentum, weight_decay, lr_gamma
+        filename = '{:s}/{:s}_{:s}.pdf'.format(
+            plot_dir, net_name, suffix
         )
         print('Saving plot to {:s}'.format(filename))
         plt.savefig(filename, bbox_inches='tight')
@@ -324,7 +322,8 @@ class CNNTrainer(object):
 
         return (running_loss, report_dict['accuracy'])
 
-    def CNN(self, net, dataset, epochs, lr, momentum, dest, lr_step, lr_step_size, lr_gamma, weight_decay) :
+    def CNN(self, net, dataset, epochs, lr, momentum, dest, lr_step,
+            lr_step_size, lr_gamma, weight_decay, suffix):
         train_loader, validation_loader, test_loader, classes = dataset
         # Instantiate CNN, pick loss function and optimizer
         criterion = nn.CrossEntropyLoss()
@@ -357,7 +356,11 @@ class CNNTrainer(object):
                 'lr': current_lr,
                 'momentum': momentum,
                 'lr_gamma': lr_gamma,
-                'weight_decay': weight_decay
+                'weight_decay': weight_decay,
+                'use_lr_step': self.use_lr_step,
+                'use_data_augmentation': self.use_data_augmentation,
+                'use_dropout': self.use_dropout,
+                'use_batch_norm': self.use_batch_norm
             })
             print('epoch [{:d}/{:d}] loss_train: {:5.3f}, acc_train: {:5.3f}, loss_val: {:5.3f}, acc_val: {:5.3f}'.format(
                 epoch + 1, epochs, loss_train, acc_train, loss_val, acc_val))
@@ -368,7 +371,9 @@ class CNNTrainer(object):
 
         if not os.path.exists(dest):
             os.mkdir(dest)
-        model_filename = '{:s}/{:s}_{:.2e}_{:.2e}_{:.2e}_{:.2e}_{:d}.pth'.format(dest, net.name, lr, momentum, lr_gamma, weight_decay, epochs)
+        model_filename = '{:s}/{:s}_{:s}.pth'.format(
+            dest, net.name, suffix
+        )
         print('Saving trained model to {:s}'.format(model_filename))
         torch.save(nets[idx], model_filename)
 
@@ -390,20 +395,30 @@ class CNNTrainer(object):
         lr_step = self.lr_step
         lr_step_size = self.lr_step_size
         lr_gamma = self.lr_gamma
+        lr = learning_rate
+        dest = '{:s}/{:s}'.format(model_dir, net.name)
+        suffix = '{:.2e}_{:.2e}_{:d}'.format(
+            lr, momentum, epochs
+        )
 
         if self.use_cuda:
             print('Training {:s} on GPU...'.format(net.name))
         else:
             print('Training {:s}...'.format(net.name))
-        lr = learning_rate
-        dest = '{:s}/{:s}'.format(model_dir, net.name)
         print('learning rate: {:e}, momentumn: {:e}'.format(lr, momentum))
-        report_dict, report, confusion, history = self.CNN(net, dataset, epochs, lr, momentum, dest, lr_step, lr_step_size, lr_gamma, weight_decay)
-        pd.DataFrame(report_dict).T.to_csv('{:s}/{:s}_{:.2e}_{:.2e}_{:d}_report.csv'.format(dest, net.name, lr, momentum, epochs))
+        report_dict, report, confusion, history = self.CNN(
+            net, dataset, epochs, lr, momentum, dest, lr_step, lr_step_size,
+            lr_gamma, weight_decay, suffix
+        )
+        pd.DataFrame(report_dict).T.to_csv('{:s}/{:s}_{:s}_report.csv'.format(
+            dest, net.name, suffix
+        ))
         print('Confusion matrix:\n', confusion)
         print('Classification report:\n', report)
         df = pd.DataFrame(history)
-        df.to_csv('{:s}/{:s}_training_history_{:.2e}_{:.2e}.csv'.format(dest, net.name, lr, momentum))
+        df.to_csv('{:s}/{:s}_training_history_{:s}.csv'.format(
+            dest, net.name, suffix
+        ))
         self.plot_lr_momentum(df, net.name, learning_rate, momentum, dest)
 
     def test_weight_decay_gamma(self):
@@ -418,22 +433,38 @@ class CNNTrainer(object):
         lr_step_size = self.lr_step_size
         lr_gamma = self.lr_gamma
         weight_decay = self.weight_decay
+        suffix = '{:.2e}_{:.2e}_{:.2e}_{:.2e}_{:d}_{:d}_{:d}_{:d}_{:d}'.format(
+            learning_rate, momentum, lr_gamma, weight_decay, self.use_lr_step,
+            self.use_data_augmentation, self.use_dropout, self.use_batch_norm,
+            epochs
+        )
+        dest = '{:s}/{:s}'.format(model_dir, net.name)
 
         if self.use_cuda:
             print('Training {:s} on GPU...'.format(net.name))
         else:
             print('Training {:s}...'.format(net.name))
-        lr = learning_rate
-        dest = '{:s}/{:s}'.format(model_dir, net.name)
-        print('learning rate: {:e}, momentumn: {:e}, weight_decay: {:e} lr_gamma: {:e}'.format(lr, momentum, weight_decay, lr_gamma))
-        report_dict, report, confusion, history = self.CNN(net, dataset, epochs, lr, momentum, dest, lr_step, lr_step_size, lr_gamma, weight_decay)
-        pd.DataFrame(report_dict).T.to_csv('{:s}/{:s}_{:.2e}_{:.2e}_{:.2e}_{:.2e}_{:d}_report.csv'.format(dest, net.name, lr, momentum, lr_gamma, weight_decay, epochs))
+        print('learning rate: {:e}, momentumn: {:e}, weight_decay: {:e} lr_gamma: {:e}'.format(
+            learning_rate, momentum, weight_decay, lr_gamma
+        ))
+        report_dict, report, confusion, history = self.CNN(
+            net, dataset, epochs, learning_rate, momentum, dest, lr_step,
+            lr_step_size, lr_gamma, weight_decay, suffix)
+        pd.DataFrame(report_dict).T.to_csv('{:s}/{:s}_report_{:s}.csv'.format(
+            dest, net.name, suffix))
         print('Confusion matrix:\n', confusion)
         print('Classification report:\n', report)
         df = pd.DataFrame(history)
-        df.to_csv('{:s}/{:s}_training_history_{:.2e}_{:.2e}_{:.2e}_{:.2e}.csv'.format(dest, net.name, lr, momentum, weight_decay, lr_gamma))
-        self.plot_weight_decay_gamma(df, net.name, learning_rate, momentum,
-                                     weight_decay, lr_gamma, dest)
+        df.to_csv('{:s}/{:s}_training_history_{:s}.csv'.format(
+            dest, net.name, suffix
+        ))
+        title = '{:s}: DA: ${:d}$, Dropout: ${:d}$, BN: ${:d}$'.format(
+            net.name, self.use_data_augmentation, self.use_dropout,
+            self.use_batch_norm)
+        # title = '{:s}: lr: ${:.4f}$, m: ${:.2f}$, wd: ${:.4f}$ $\gamma$: ${:.4f}$'.format(
+        #     net.name, learning_rate, momentum, weight_decay, lr_gamma)
+        self.plot(df, net.name, learning_rate, momentum, weight_decay, lr_gamma,
+                  dest, suffix, title)
 
 
 if __name__ == '__main__':
@@ -451,6 +482,9 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--lr_step', dest='lr_step', help='True/False: Enable/Disable learning_rates scheduler')
     parser.add_argument('-s', '--lr_step_size', dest='lr_step_size', help='Decay learning_rate every lr_step_size')
     parser.add_argument('-g', '--lr_gamma', dest='lr_gamma', help='Decay learning_rate by lr_gamma')
+    parser.add_argument('-a', '--use_data_augmentation', dest='use_data_augmentation', help='Use data_augmentation')
+    parser.add_argument('-o', '--use_dropout', dest='use_dropout', help='Use dropout')
+    parser.add_argument('-c', '--use_batch_norm', dest='use_batch_norm', help='Use batch normalization')
     args = parser.parse_args()
 
     data_dir = args.data_dir if args.data_dir else '/Users/libao/Documents/data/cnn/animals/'
@@ -466,7 +500,11 @@ if __name__ == '__main__':
     lr_step_size = int(args.lr_step_size) if args.lr_step_size else 10
     lr_gamma = float(args.lr_gamma) if args.lr_gamma else 0.1
     net_name = args.net_name if args.net_name else 'ShallowNet'
+    use_data_augmentation = True if args.use_data_augmentation and args.use_data_augmentation == 'True' else False
+    use_dropout = True if args.use_dropout and args.use_dropout == 'True' else False
+    use_batch_norm = True if args.use_batch_norm and args.use_batch_norm == 'True' else False
 
+    print('---------- Parameters ---------')
     print('data_dir:', data_dir)
     print('model_dir:', model_dir)
     print('batch_size:', batch_size)
@@ -480,9 +518,13 @@ if __name__ == '__main__':
     print('weight_decay:', weight_decay)
     print('momentum:', momentum)
     print('net_name:', net_name)
+    print('use_data_augmentation:', use_data_augmentation)
+    print('use_dropout:', use_dropout)
+    print('use_batch_norm:', use_batch_norm)
 
     ct = CNNTrainer(data_dir, model_dir, batch_size, test_size,
                     validation_size, learning_rate, momentum, epochs,
-                    net_name, lr_step, lr_step_size, lr_gamma, weight_decay)
+                    net_name, lr_step, lr_step_size, lr_gamma, weight_decay,
+                    use_data_augmentation, use_dropout, use_batch_norm)
     # ct.test_lr_momentum()
     ct.test_weight_decay_gamma()

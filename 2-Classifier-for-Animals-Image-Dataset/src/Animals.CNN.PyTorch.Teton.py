@@ -130,22 +130,24 @@ class CNNTrainer(object):
         self.test_size = test_size
         self.validation_size = validation_size
         self.use_data_augmentation = 1 if use_data_augmentation else 0
+        self.test_transform = transforms.Compose([
+                transforms.Resize((32, 32)),                            # resize all the image to 32x32x3
+                transforms.ToTensor(),                                  # [0, 255] -> [0, 1.0], (H x W x C) -> (C x H x W)
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # [0, 1.0] -> [-1.0, 1.0]
+        ])
         if use_data_augmentation:  # Data Augmentation
-            self.transform = transforms.Compose([
-                transforms.RandomCrop(32),
+            self.train_transform = transforms.Compose([
                 transforms.RandomVerticalFlip(),
                 transforms.RandomHorizontalFlip(),
+                transforms.Resize((32, 32)),                            # resize all the image to 32x32x3
                 transforms.ToTensor(),
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
             ])
         else:
-            self.transform = transforms.Compose([
-                transforms.Resize((32, 32)),                            # resize all the image to 32x32x3
-                transforms.ToTensor(),                                  # [0, 255] -> [0, 1.0], (H x W x C) -> (C x H x W)
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # [0, 1.0] -> [-1.0, 1.0]
-            ])
+            self.train_transform = self.test_transform
+
         self.dataset = self.read_image(data_dir, test_size, validation_size,
-                                       batch_size, self.transform)
+                                       batch_size)
         train_loader, validation_loader, test_loader, classes = self.dataset
         self.train_loader = train_loader
         self.validation_loader = validation_loader
@@ -239,9 +241,7 @@ class CNNTrainer(object):
         plt.savefig(filename, bbox_inches='tight')
 
     def read_image(self, data_dir, test_size=0.25, validation_size=0.2,
-                   batch_size=32, transform=None):
-        if not transform:
-            transform = self.transform
+                   batch_size=32):
         # Read images and labels
         data, labels = [], []
         classes = [c for c in os.listdir(data_dir) if not c.startswith('.')]
@@ -262,9 +262,9 @@ class CNNTrainer(object):
         test_set = (X_test, Y_test)
 
         # Transform RGB image to torch.Tensor
-        validation_set = AnimalsDataset(validation_set, transform)
-        train_set = AnimalsDataset(train_set, transform)
-        test_set = AnimalsDataset(test_set, transform)
+        validation_set = AnimalsDataset(validation_set, self.test_transform)
+        train_set = AnimalsDataset(train_set, self.train_transform)
+        test_set = AnimalsDataset(test_set, self.test_transform)
 
         # Create DataLoader for train_set, validation_set, and test_set
         validation_loader = DataLoader(validation_set, batch_size=batch_size, shuffle=False, num_workers=0)

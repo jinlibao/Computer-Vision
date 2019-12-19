@@ -119,7 +119,7 @@ class AnimalsDataset(Dataset):
         return len(self.dataset[0])
 
     def __getitem__(self, idx):
-        image= self.dataset[0][idx]
+        image = self.dataset[0][idx]
         target = self.dataset[1][idx]
         if self.transform:
             image = self.transform(image)
@@ -203,13 +203,13 @@ class CNNTrainer(object):
         plt.plot(d['epoch'], d['loss_val'], linestyle[3], label='loss_val')
         plt.xlabel('epoch #', color='black')
         plt.ylabel('loss/accuracy', color='black')
-        plt.title('{:s} (lr = ${:.2f}$, momentum = ${:.2f}$)'.format(
+        plt.title('{:s} (lr = ${:.2e}$, momentum = ${:.2e}$)'.format(
             net_name, lr, m))
         plt.legend(loc='best')
         [i.set_color('black') for i in plt.gca().get_xticklabels()]
         [i.set_color('black') for i in plt.gca().get_yticklabels()]
         plt.show(block=False)
-        filename = '{:s}/{:s}_{:.2f}_{:.2f}.pdf'.format(
+        filename = '{:s}/{:s}_{:.2e}_{:.2e}.pdf'.format(
             plot_dir, net_name, lr, m
         )
         print('Saving plot to {:s}'.format(filename))
@@ -336,7 +336,7 @@ class CNNTrainer(object):
 
         if not os.path.exists(dest):
             os.mkdir(dest)
-        model_filename = '{:s}/{:s}_{:.2f}_{:.2f}_{:d}.pth'.format(dest, net.name, lr, momentum, epochs)
+        model_filename = '{:s}/{:s}_{:.2e}_{:.2e}_{:d}.pth'.format(dest, net.name, lr, momentum, epochs)
         print('Saving trained model to {:s}'.format(model_filename))
         torch.save(nets[idx], model_filename)
 
@@ -367,11 +367,11 @@ class CNNTrainer(object):
         dest='{:s}/{:s}'.format(model_dir, net.name)
         print('learning rate: {:e}, momentumn: {:e}'.format(lr, momentum))
         report_dict, report, confusion, history = self.CNN(net, dataset, epochs, lr, momentum, dest, lr_step, lr_step_size, lr_gamma)
-        pd.DataFrame(report_dict).T.to_csv('{:s}/{:s}_{:.2f}_{:.2f}_{:d}_report.csv'.format(dest, net.name, lr, momentum, epochs))
+        pd.DataFrame(report_dict).T.to_csv('{:s}/{:s}_{:.2e}_{:.2e}_{:d}_report.csv'.format(dest, net.name, lr, momentum, epochs))
         print('Confusion matrix:\n', confusion)
         print('Classification report:\n', report)
         df = pd.DataFrame(history)
-        df.to_csv('{:s}/{:s}_training_history_{:.2f}_{:.2f}.csv'.format(dest, net.name, lr, momentum))
+        df.to_csv('{:s}/{:s}_training_history_{:.2e}_{:.2e}.csv'.format(dest, net.name, lr, momentum))
         self.plot(df, net.name, learning_rate, momentum, dest)
 
 

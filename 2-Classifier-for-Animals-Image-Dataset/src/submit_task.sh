@@ -122,7 +122,7 @@ do
     for (( m=1; m<3; ++m ))
     do
       export MOMENTUM=${MOMENTUMS[m]}
-      for (( g=1; g<1; ++g ))
+      for (( g=1; g<2; ++g ))
       do
         export LR_GAMMA=${LR_GAMMAS[g]}
         for (( w=0; w<1; ++w ))
@@ -134,10 +134,11 @@ do
             for (( o=0; o<2; ++o ))
             do
               export USE_DROPOUT=${USE_DROPOUTS[o]}
-              for (( c=0; c<2; +co ))
+              for (( c=0; c<2; ++c ))
               do
                 export USE_BATCH_NORM=${USE_BATCH_NORMS[c]}
                 export NCPU=`echo ${NODES[k]} \* ${NTASKS_PER_NODE[k]}|bc`
+                echo $NET_NAME $LEARNING_RATE $MOMENTUM $LR_GAMMA $WEIGHT_DECAY $USE_DATA_AUGMENTATION $USE_DROPOUT $USE_BATCH_NORM
                 sbatch --partition=${PARTITION[k]} --nodes=${NODES[k]} --ntasks-per-node=${NTASKS_PER_NODE[k]} --mem=${MEM[k]} --gres=${GRES[k]} task.sh
                 # bash task.sh
               done

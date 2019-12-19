@@ -130,7 +130,7 @@ class CNNTrainer(object):
 
     def __init__(self, data_dir, model_dir, batch_size, test_size,
                  validation_size, learning_rate, momentum, epochs,
-                 net_name, lr_step, lr_step_size, lr_gamma):
+                 net_name, lr_step, lr_step_size, lr_gamma, weight_decay):
         # Visualization
         ImageFile.LOAD_TRUNCATED_IMAGES = True
         plt.style.use('ggplot')
@@ -164,6 +164,7 @@ class CNNTrainer(object):
         self.lr_step = lr_step
         self.lr_step_size = lr_step_size
         self.lr_gamma = lr_gamma
+        self.weight_decay = weight_decay
 
         # Choose device to train on
         self.use_cuda = torch.cuda.is_available()
@@ -191,7 +192,31 @@ class CNNTrainer(object):
 
         plt.show()
 
-    def plot(self, df, net_name, learning_rate, momentum, plot_dir='.'):
+    def plot_weight_decay_gamma(self, df, net_name, learning_rate, momentum,
+                                weight_decay, lr_gamma, plot_dir='.'):
+        linestyle = self.linestyle
+        d = df[(df['weight_decay'] == weight_decay) & (df['lr_gamma'] == lr_gamma)]
+        plt.figure(figsize=(8, 6))
+        plt.plot(d['epoch'], d['acc_train'], linestyle[0], label='acc_train')
+        plt.plot(d['epoch'], d['acc_val'], linestyle[1], label='acc_val')
+        plt.plot(d['epoch'], d['loss_train'], linestyle[2], label='loss_train')
+        plt.plot(d['epoch'], d['loss_val'], linestyle[3], label='loss_val')
+        plt.xlabel('epoch #', color='black')
+        plt.ylabel('loss/accuracy', color='black')
+        plt.title('{:s} (weight_decay = ${:.2e}$, lr_gamma = ${:.2e}$)'.format(
+            net_name, weight_decay, lr_gamma))
+        plt.legend(loc='best')
+        [i.set_color('black') for i in plt.gca().get_xticklabels()]
+        [i.set_color('black') for i in plt.gca().get_yticklabels()]
+        plt.show(block=False)
+        filename = '{:s}/{:s}_{:.2e}_{:.2e}_{:.2e}_{:.2e}.pdf'.format(
+            plot_dir, net_name, learning_rate, momentum, weight_decay, lr_gamma
+        )
+        print('Saving plot to {:s}'.format(filename))
+        plt.savefig(filename, bbox_inches='tight')
+
+    def plot_lr_momentum(self, df, net_name, learning_rate, momentum,
+                         plot_dir='.'):
         linestyle = self.linestyle
         lr = learning_rate
         m = momentum
@@ -299,11 +324,16 @@ class CNNTrainer(object):
 
         return (running_loss, report_dict['accuracy'])
 
-    def CNN(self, net, dataset, epochs, lr, momentum, dest, lr_step, lr_step_size, lr_gamma) :
+    def CNN(self, net, dataset, epochs, lr, momentum, dest, lr_step, lr_step_size, lr_gamma, weight_decay) :
         train_loader, validation_loader, test_loader, classes = dataset
         # Instantiate CNN, pick loss function and optimizer
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.SGD(net.parameters(), lr=lr, momentum=momentum) # lr: 1e-1, 1e-2, 1e-3, 1e-4; momentum: 0.9-0.99
+        optimizer = optim.SGD(
+            net.parameters(),
+            lr=lr,
+            momentum=momentum,
+            weight_decay=weight_decay
+        )
         current_lr = lr
 
         history = []
@@ -325,7 +355,9 @@ class CNNTrainer(object):
                 'loss_train': loss_train,
                 'loss_val': loss_val,
                 'lr': current_lr,
-                'momentum': momentum
+                'momentum': momentum,
+                'lr_gamma': lr_gamma,
+                'weight_decay': weight_decay
             })
             print('epoch [{:d}/{:d}] loss_train: {:5.3f}, acc_train: {:5.3f}, loss_val: {:5.3f}, acc_val: {:5.3f}'.format(
                 epoch + 1, epochs, loss_train, acc_train, loss_val, acc_val))
@@ -336,7 +368,7 @@ class CNNTrainer(object):
 
         if not os.path.exists(dest):
             os.mkdir(dest)
-        model_filename = '{:s}/{:s}_{:.2e}_{:.2e}_{:d}.pth'.format(dest, net.name, lr, momentum, epochs)
+        model_filename = '{:s}/{:s}_{:.2e}_{:.2e}_{:.2e}_{:.2e}_{:d}.pth'.format(dest, net.name, lr, momentum, lr_gamma, weight_decay, epochs)
         print('Saving trained model to {:s}'.format(model_filename))
         torch.save(nets[idx], model_filename)
 
@@ -347,7 +379,7 @@ class CNNTrainer(object):
 
         return (report_dict, report, confusion, history)
 
-    def test(self):
+    def test_lr_momentum(self):
         train_loader, validation_loader, test_loader, classes = self.dataset
         net = self.nets[self.net_name]
         epochs = self.epochs
@@ -364,15 +396,44 @@ class CNNTrainer(object):
         else:
             print('Training {:s}...'.format(net.name))
         lr = learning_rate
-        dest='{:s}/{:s}'.format(model_dir, net.name)
+        dest = '{:s}/{:s}'.format(model_dir, net.name)
         print('learning rate: {:e}, momentumn: {:e}'.format(lr, momentum))
-        report_dict, report, confusion, history = self.CNN(net, dataset, epochs, lr, momentum, dest, lr_step, lr_step_size, lr_gamma)
+        report_dict, report, confusion, history = self.CNN(net, dataset, epochs, lr, momentum, dest, lr_step, lr_step_size, lr_gamma, weight_decay)
         pd.DataFrame(report_dict).T.to_csv('{:s}/{:s}_{:.2e}_{:.2e}_{:d}_report.csv'.format(dest, net.name, lr, momentum, epochs))
         print('Confusion matrix:\n', confusion)
         print('Classification report:\n', report)
         df = pd.DataFrame(history)
         df.to_csv('{:s}/{:s}_training_history_{:.2e}_{:.2e}.csv'.format(dest, net.name, lr, momentum))
-        self.plot(df, net.name, learning_rate, momentum, dest)
+        self.plot_lr_momentum(df, net.name, learning_rate, momentum, dest)
+
+    def test_weight_decay_gamma(self):
+        train_loader, validation_loader, test_loader, classes = self.dataset
+        net = self.nets[self.net_name]
+        epochs = self.epochs
+        learning_rate = self.learning_rate
+        momentum = self.momentum
+        dataset = self.dataset
+        model_dir = self.model_dir
+        lr_step = self.lr_step
+        lr_step_size = self.lr_step_size
+        lr_gamma = self.lr_gamma
+        weight_decay = self.weight_decay
+
+        if self.use_cuda:
+            print('Training {:s} on GPU...'.format(net.name))
+        else:
+            print('Training {:s}...'.format(net.name))
+        lr = learning_rate
+        dest = '{:s}/{:s}'.format(model_dir, net.name)
+        print('learning rate: {:e}, momentumn: {:e}, weight_decay: {:e} lr_gamma: {:e}'.format(lr, momentum, weight_decay, lr_gamma))
+        report_dict, report, confusion, history = self.CNN(net, dataset, epochs, lr, momentum, dest, lr_step, lr_step_size, lr_gamma, weight_decay)
+        pd.DataFrame(report_dict).T.to_csv('{:s}/{:s}_{:.2e}_{:.2e}_{:.2e}_{:.2e}_{:d}_report.csv'.format(dest, net.name, lr, momentum, lr_gamma, weight_decay, epochs))
+        print('Confusion matrix:\n', confusion)
+        print('Classification report:\n', report)
+        df = pd.DataFrame(history)
+        df.to_csv('{:s}/{:s}_training_history_{:.2e}_{:.2e}_{:.2e}_{:.2e}.csv'.format(dest, net.name, lr, momentum, weight_decay, lr_gamma))
+        self.plot_weight_decay_gamma(df, net.name, learning_rate, momentum,
+                                     weight_decay, lr_gamma, dest)
 
 
 if __name__ == '__main__':
@@ -385,6 +446,7 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--epochs', dest='epochs', help='Number of epochs to train the network')
     parser.add_argument('-n', '--net_name', dest='net_name', help='Choose CNN to train')
     parser.add_argument('-r', '--learning_rate', dest='learning_rate', help='Learning rate')
+    parser.add_argument('-w', '--weight_decay', dest='weight_decay', help='Weight decay')
     parser.add_argument('-u', '--momentum', dest='momentum', help='Momentum')
     parser.add_argument('-l', '--lr_step', dest='lr_step', help='True/False: Enable/Disable learning_rates scheduler')
     parser.add_argument('-s', '--lr_step_size', dest='lr_step_size', help='Decay learning_rate every lr_step_size')
@@ -398,6 +460,7 @@ if __name__ == '__main__':
     validation_size = float(args.validation_size) if args.validation_size else 0.2
     epochs = int(args.epochs) if args.epochs else 30
     learning_rate = float(args.learning_rate) if args.learning_rate else 1e-2
+    weight_decay = float(args.weight_decay) if args.weight_decay else 0
     momentum = float(args.momentum) if args.momentum else 0.85
     lr_step = True if args.lr_step and args.lr_step == 'True' else False
     lr_step_size = int(args.lr_step_size) if args.lr_step_size else 10
@@ -414,10 +477,12 @@ if __name__ == '__main__':
     print('lr_step_size:', lr_step_size)
     print('lr_gamma:', lr_gamma)
     print('learning_rate:', learning_rate)
+    print('weight_decay:', weight_decay)
     print('momentum:', momentum)
     print('net_name:', net_name)
 
     ct = CNNTrainer(data_dir, model_dir, batch_size, test_size,
                     validation_size, learning_rate, momentum, epochs,
-                    net_name, lr_step, lr_step_size, lr_gamma)
-    ct.test()
+                    net_name, lr_step, lr_step_size, lr_gamma, weight_decay)
+    # ct.test_lr_momentum()
+    ct.test_weight_decay_gamma()

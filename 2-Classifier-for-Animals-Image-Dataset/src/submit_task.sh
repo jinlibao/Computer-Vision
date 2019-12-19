@@ -85,11 +85,10 @@ export BATCH_SIZE=128
 export TEST_SIZE=0.25
 export VALIDATION_SIZE=0.2
 export EPOCHS=200
-export LR_STEP=False
-export LR_STEP_SIZE=10
-export LR_GAMMA=0.5
-NET_NAMES[0]=LeNet
-NET_NAMES[1]=ShallowNet
+export LR_STEP=True
+export LR_STEP_SIZE=50
+NET_NAMES[0]=ShallowNet
+NET_NAMES[1]=LeNet
 NET_NAMES[2]=MiniVGGNet
 LEARNING_RATES[0]=1e-1
 LEARNING_RATES[1]=1e-2
@@ -99,19 +98,35 @@ MOMENTUMS[0]=0.8
 MOMENTUMS[1]=0.85
 MOMENTUMS[2]=0.9
 MOMENTUMS[3]=0.95
+LR_GAMMAS[0]=0.5
+LR_GAMMAS[1]=0.1
+LR_GAMMAS[2]=0.05
+LR_GAMMAS[3]=0.01
+WEIGHT_DECAYS[0]=1e-1
+WEIGHT_DECAYS[1]=1e-2
+WEIGHT_DECAYS[2]=1e-3
+WEIGHT_DECAYS[3]=1e-4
 
-for (( i=0; i<3; ++i ))
+for (( i=2; i<3; ++i ))
 do
     export NET_NAME=${NET_NAMES[i]}
-    for (( l=0; l<4; ++l ))
+    for (( l=1; l<2; ++l ))
     do
         export LEARNING_RATE=${LEARNING_RATES[l]}
-        for (( m=0; m<4; ++m ))
+        for (( m=1; m<2; ++m ))
         do
             export MOMENTUM=${MOMENTUMS[m]}
-            export NCPU=`echo ${NODES[k]} \* ${NTASKS_PER_NODE[k]}|bc`
-            sbatch --partition=${PARTITION[k]} --nodes=${NODES[k]} --ntasks-per-node=${NTASKS_PER_NODE[k]} --mem=${MEM[k]} --gres=${GRES[k]} task.sh
-            # bash task.sh
+            for (( g=0; g<4; ++g ))
+            do
+                export LR_GAMMA=${LR_GAMMAS[g]}
+                for (( w=0; w<4; ++w ))
+                do
+                    export WEIGHT_DECAY=${WEIGHT_DECAYS[w]}
+                    export NCPU=`echo ${NODES[k]} \* ${NTASKS_PER_NODE[k]}|bc`
+                    sbatch --partition=${PARTITION[k]} --nodes=${NODES[k]} --ntasks-per-node=${NTASKS_PER_NODE[k]} --mem=${MEM[k]} --gres=${GRES[k]} task.sh
+                    # bash task.sh
+                done
+            done
         done
     done
 done

@@ -81,24 +81,41 @@ fi
 
 k=1
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export BATCH_SIZE=128
 export TEST_SIZE=0.25
 export VALIDATION_SIZE=0.2
 export EPOCHS=200
 export LR_STEP=True
 export LR_STEP_SIZE=25
-NET_NAMES[0]=MnasNet
-NET_NAMES[1]=VGG19
-NET_NAMES[2]=ShuffleNet
-NET_NAMES[3]=ResNet18
-NET_NAMES[4]=ResNet34
-NET_NAMES[5]=ResNet50
-NET_NAMES[6]=ResNet101
-NET_NAMES[7]=ResNet152
+NET_NAMES[0]=ResNet18
+NET_NAMES[1]=ResNet34
+NET_NAMES[2]=ResNet50
+NET_NAMES[3]=ResNet101
+NET_NAMES[4]=ResNet152
+NET_NAMES[5]=VGG11
+NET_NAMES[6]=VGG19
+NET_NAMES[7]=ShuffleNet
 NET_NAMES[8]=AlexNet
 NET_NAMES[9]=SequeezeNet
 NET_NAMES[10]=DenseNet
 NET_NAMES[11]=GoogLeNet
+NET_NAMES[12]=MnasNet
 LEARNING_RATES[0]=1e-1
 LEARNING_RATES[1]=1e-2
 LEARNING_RATES[2]=1e-3
@@ -122,7 +139,7 @@ USE_BATCH_NORMS[1]=False
 USE_DROPOUTS[0]=True
 USE_DROPOUTS[1]=False
 
-for (( i=0; i<12; ++i ))
+for (( i=0; i<13; ++i ))
 do
   export NET_NAME=${NET_NAMES[i]}
   for (( l=2; l<3; ++l ))

@@ -430,9 +430,11 @@ class TransferLearner(object):
         df.to_csv('{:s}/{:s}_training_history_{:s}.csv'.format(
             dest, net_name, suffix
         ))
-        title = '{:s}: DA: ${:d}$, Dropout: ${:d}$, BN: ${:d}$'.format(
-            net_name, self.use_data_augmentation, self.use_dropout,
-            self.use_batch_norm)
+
+        title = '{:s}'.format(net_name)
+        # title = '{:s}: DA: ${:d}$, Dropout: ${:d}$, BN: ${:d}$'.format(
+        #     net_name, self.use_data_augmentation, self.use_dropout,
+        #     self.use_batch_norm)
         # title = '{:s}: lr: ${:.4f}$, m: ${:.2f}$, wd: ${:.4f}$ $\gamma$: ${:.4f}$'.format(
         #     net_name, learning_rate, momentum, weight_decay, lr_gamma)
         self.plot(df, net_name, learning_rate, momentum, weight_decay, lr_gamma,

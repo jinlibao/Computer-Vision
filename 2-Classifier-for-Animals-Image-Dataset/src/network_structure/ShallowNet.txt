@@ -1,0 +1,16 @@
+ShallowNet use_batch_norm: False use_dropout: False
+----------------------------------------------------------------
+        Layer (type)               Output Shape         Param #
+================================================================
+            Conv2d-1           [-1, 32, 32, 32]             896
+            Linear-2                    [-1, 3]          98,307
+================================================================
+Total params: 99,203
+Trainable params: 99,203
+Non-trainable params: 0
+----------------------------------------------------------------
+Input size (MB): 0.01
+Forward/backward pass size (MB): 0.25
+Params size (MB): 0.38
+Estimated Total Size (MB): 0.64
+----------------------------------------------------------------

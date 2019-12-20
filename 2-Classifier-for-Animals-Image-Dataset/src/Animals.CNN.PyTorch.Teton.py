@@ -12,6 +12,8 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import torchvision
 from torchvision import transforms, utils
+from torchsummary import summary
+from tensorboardX import SummaryWriter
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.metrics import classification_report, confusion_matrix
@@ -178,6 +180,63 @@ class CNNTrainer(object):
             'ShallowNet': ShallowNet(),
         }
 
+    def net_graph(self, net_name, dataiter, use_batch_norm=False,
+                    use_dropout=False):
+        nets = {
+            'LeNet': LeNet(),
+            'ShallowNet': ShallowNet(),
+            'MiniVGGNet': MiniVGGNet(use_batch_norm, use_dropout)
+        }
+        writer = SummaryWriter('runs/{:s}'.format(net_name))
+        net = nets[net_name]
+        images, labels = dataiter.next()
+        writer.add_graph(net, images)
+        writer.close()
+
+    def test_net_graph(self):
+        train_loader, validation_loader, test_loader, classes = self.dataset
+        dataiter = iter(train_loader)
+        net_names = ['LeNet', 'ShallowNet', 'MiniVGGNet']
+        use_batch_norms = [True, False]
+        use_dropout = [True, False]
+        for i in range(2):
+            self.net_graph(net_names[i], dataiter)
+
+        for i in range(2):
+            for j in range(2):
+                self.net_graph(
+                    net_names[2],
+                    dataiter,
+                    use_batch_norms[i],
+                    use_dropout[j]
+                )
+
+    def net_summary(self, net_name, use_batch_norm=False,
+                        use_dropout=False):
+        nets = {
+            'LeNet': LeNet(),
+            'ShallowNet': ShallowNet(),
+            'MiniVGGNet': MiniVGGNet(use_batch_norm, use_dropout)
+        }
+        print(net_name, 'use_batch_norm:',
+              use_batch_norm, 'use_dropout:', use_dropout)
+        net = nets[net_name]
+        summary(net, (3, 32, 32))
+
+    def test_net_summary(self):
+        net_names = ['LeNet', 'ShallowNet', 'MiniVGGNet']
+        use_batch_norms = [True, False]
+        use_dropout = [True, False]
+        for i in range(2):
+            self.net_summary(net_names[i])
+
+        for i in range(2):
+            for j in range(2):
+                self.net_summary(
+                    net_names[2],
+                    use_batch_norms[i],
+                    use_dropout[j]
+                )
 
     def imshow(self, image):
         image = image / 2 + 0.5
@@ -528,3 +587,5 @@ if __name__ == '__main__':
                     use_data_augmentation, use_dropout, use_batch_norm)
     # ct.test_lr_momentum()
     ct.test_weight_decay_gamma()
+    # ct.test_net_graph()
+    # ct.test_net_summary()

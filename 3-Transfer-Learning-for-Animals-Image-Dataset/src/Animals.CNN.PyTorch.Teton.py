@@ -60,7 +60,10 @@ class TransferLearner(object):
         self.test_transform = transforms.Compose([
                 transforms.Resize((32, 32)),                            # resize all the image to 32x32x3
                 transforms.ToTensor(),                                  # [0, 255] -> [0, 1.0], (H x W x C) -> (C x H x W)
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # [0, 1.0] -> [-1.0, 1.0]
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225]
+                )
         ])
         if use_data_augmentation:  # Data Augmentation
             self.train_transform = transforms.Compose([
@@ -68,7 +71,10 @@ class TransferLearner(object):
                 transforms.RandomHorizontalFlip(),
                 transforms.Resize((32, 32)),                            # resize all the image to 32x32x3
                 transforms.ToTensor(),
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225]
+                )
             ])
         else:
             self.train_transform = self.test_transform
@@ -225,36 +231,105 @@ class TransferLearner(object):
                              lr_gamma=0.1, num_classes=3):
         if net_name == 'ResNet18':
             net = torchvision.models.resnet18(pretrained=True)
+            for param in net.parameters():
+                param.requires_grad = False
+            num_ftrs = net.fc.in_features
+            net.fc = nn.Linear(num_ftrs, num_classes)
+            parameters = net.fc.parameters()
         elif net_name == 'ResNet34':
             net = torchvision.models.resnet34(pretrained=True)
+            for param in net.parameters():
+                param.requires_grad = False
+            num_ftrs = net.fc.in_features
+            net.fc = nn.Linear(num_ftrs, num_classes)
+            parameters = net.fc.parameters()
         elif net_name == 'ResNet50':
             net = torchvision.models.resnet50(pretrained=True)
+            for param in net.parameters():
+                param.requires_grad = False
+            num_ftrs = net.fc.in_features
+            net.fc = nn.Linear(num_ftrs, num_classes)
+            parameters = net.fc.parameters()
         elif net_name == 'ResNet101':
             net = torchvision.models.resnet101(pretrained=True)
+            for param in net.parameters():
+                param.requires_grad = False
+            num_ftrs = net.fc.in_features
+            net.fc = nn.Linear(num_ftrs, num_classes)
+            parameters = net.fc.parameters()
         elif net_name == 'ResNet152':
             net = torchvision.models.resnet152(pretrained=True)
+            for param in net.parameters():
+                param.requires_grad = False
+            num_ftrs = net.fc.in_features
+            net.fc = nn.Linear(num_ftrs, num_classes)
+            parameters = net.fc.parameters()
         elif net_name == 'AlexNet':
             net = torchvision.models.alexnet(pretrained=True)
+            for param in net.parameters():
+                param.requires_grad = False
+            num_ftrs = net.classifier[6].in_features
+            net.classifier[6] = nn.Linear(num_ftrs, num_classes)
+            parameters = net.classifier[6].parameters()
         elif net_name == 'SqueezeNet':
             net = torchvision.models.squeezenet1_1(pretrained=True)
+            for param in net.parameters():
+                param.requires_grad = False
+            net.classifier[1] = nn.Conv2d(512, num_classes, kernel_size=(1, 1),
+                                          stride=(1, 1))
+            parameters = net.classifier[1].parameters()
         elif net_name == 'DenseNet':
             net = torchvision.models.densenet121(pretrained=True)
+            for param in net.parameters():
+                param.requires_grad = False
+            num_ftrs = net.classifier.in_features
+            net.classifier = nn.Linear(num_ftrs, num_classes)
+            parameters = net.classifier.parameters()
         elif net_name == 'GoogLeNet':
             net = torchvision.models.googlenet(pretrained=True)
+            for param in net.parameters():
+                param.requires_grad = False
+            num_ftrs = net.fc.in_features
+            net.fc = nn.Linear(num_ftrs, num_classes)
+            parameters = net.fc.parameters()
         elif net_name == 'MnasNet':
             net = torchvision.models.mnasnet1_0(pretrained=True)
+            for param in net.parameters():
+                param.requires_grad = False
+            num_ftrs = net.classifier[1].in_features
+            net.classifier[1] = nn.Linear(num_ftrs, num_classes)
+            parameters = net.classifier[1].parameters()
+        elif net_name == 'VGG11':
+            net = torchvision.models.vgg11(pretrained=True)
+            for param in net.parameters():
+                param.requires_grad = False
+            num_ftrs = net.classifier[6].in_features
+            net.classifier[6] = nn.Linear(num_ftrs, num_classes)
+            parameters = net.classifier[6].parameters()
         elif net_name == 'VGG19':
             net = torchvision.models.vgg19(pretrained=True)
+            for param in net.parameters():
+                param.requires_grad = False
+            num_ftrs = net.classifier[6].in_features
+            net.classifier[6] = nn.Linear(num_ftrs, num_classes)
+            parameters = net.classifier[6].parameters()
         elif net_name == 'ShuffleNet':
-            net = torchvision.models.shufflenet_v2_x2_0(pretrained=True)
+            net = torchvision.models.shufflenet_v2_x0_5(pretrained=True)
+            for param in net.parameters():
+                param.requires_grad = False
+            num_ftrs = net.fc.in_features
+            net.fc = nn.Linear(num_ftrs, num_classes)
+            parameters = net.fc.parameters()
         else:
             net = torchvision.models.resnet18(pretrained=True)
-        for param in net.parameters():
-            param.requires_grad = False
-        num_ftrs = net.fc.in_features
-        net.fc = nn.Linear(num_ftrs, num_classes)
+            for param in net.parameters():
+                param.requires_grad = False
+            num_ftrs = net.fc.in_features
+            net.fc = nn.Linear(num_ftrs, num_classes)
+            parameters = net.fc.parameters()
+
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.SGD(net.fc.parameters(),
+        optimizer = optim.SGD(parameters,
                               lr=learning_rate,
                               momentum=momentum,
                               weight_decay=weight_decay)
@@ -400,8 +475,6 @@ if __name__ == '__main__':
     use_data_augmentation = True if args.use_data_augmentation and args.use_data_augmentation == 'True' else False
     use_dropout = True if args.use_dropout and args.use_dropout == 'True' else False
     use_batch_norm = True if args.use_batch_norm and args.use_batch_norm == 'True' else False
-
-    net_name = 'ResNet18'
 
     print('---------- Parameters ---------')
     print('data_dir:', data_dir)
